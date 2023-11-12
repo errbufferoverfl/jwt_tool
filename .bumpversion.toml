@@ -1,0 +1,20 @@
+[tool.bumpversion]
+current_version = "2.2.6"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+serialize = ["{major}.{minor}.{patch}"]
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "jwt_tool.py"
+serialize = ["{major}.{minor}.{patch}"]
+search = 'jwttoolvers = "{current_version}"'
+replace = 'jwttoolvers = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "jwt_tool.py"
+serialize = ["{major}.{minor}.{patch}"]
+search = '# JWT_Tool version {current_version} (09_09_2022)'
+replace = '# JWT_Tool version {new_version} (09_09_2022)'
