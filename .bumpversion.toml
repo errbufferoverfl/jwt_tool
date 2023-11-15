@@ -10,8 +10,8 @@ replace = 'version = "{new_version}"'
 [[tool.bumpversion.files]]
 filename = "jwt_tool.py"
 serialize = ["{major}.{minor}.{patch}"]
-search = 'jwttoolvers = "{current_version}"'
-replace = 'jwttoolvers = "{new_version}"'
+search = '__VERSION__ = "{current_version}"'
+replace = '__VERSION__ = "{new_version}"'
 
 [[tool.bumpversion.files]]
 filename = "jwt_tool.py"
