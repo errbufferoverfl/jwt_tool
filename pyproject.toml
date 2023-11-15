@@ -13,10 +13,11 @@ termcolor = "^2.3.0"
 cprint = "^1.2.2"
 pycryptodomex = "^3.19.0"
 requests = "^2.31.0"
+colorama = "^0.4.6"
+p = "^1.4.0"
+toml = "^0.10.2"
+pydantic = "^2.5.0"
 
-
-[tool.poetry.group.dev.dependencies]
-bump-my-version = "^0.12.0"
 
 [build-system]
 requires = ["poetry-core"]
