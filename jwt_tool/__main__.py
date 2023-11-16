@@ -16,6 +16,7 @@ def _init_config():
         config_conf.save_to_file()
 
     config_conf.crypto.generate_rsa_key()
+    config_conf.crypto.generate_ecc_key()
 
 
 def _init_logging():
