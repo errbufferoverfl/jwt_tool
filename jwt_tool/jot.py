@@ -183,7 +183,8 @@ class JWK:
         Returns:
             None
         """
-        self._e = base64.urlsafe_b64encode(value.e.to_bytes(3, byteorder="big"))
+        if self.kty is SymmetricKeyAlgorithm.RSA:
+            self._e = base64.urlsafe_b64encode(value.e.to_bytes(3, byteorder="big"))
 
     def _guess_key_type(self, public_key: bytes):
         """
