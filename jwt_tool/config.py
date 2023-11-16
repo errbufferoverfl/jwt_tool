@@ -1,12 +1,11 @@
 import pathlib
-from typing import Optional, Annotated, Any
+from typing import Optional, Annotated
 
 import pydantic
 import toml
 from Cryptodome.PublicKey import RSA, ECC
 
 from jwt_tool import CONFIG_PATH
-
 
 Url = Annotated[str, pydantic.PlainValidator(lambda value: str(pydantic.TypeAdapter(pydantic.AnyUrl).validate_python(value)))]
 Path = Annotated[str, pydantic.PlainValidator(lambda value: str(pydantic.TypeAdapter(pathlib.Path).validate_python(value))), pydantic.PlainSerializer(lambda value: str(value))]
@@ -58,17 +57,16 @@ class Crypto(pydantic.BaseModel):
         private = ecc_key.export_key(format=self.ecc_export_format)
 
         try:
-            with pathlib.Path(self.ecc_public_key).open(mode="xb") as file:
+            with pathlib.Path(self.ecc_public_key).open(mode="x") as file:
                 file.write(public)
         except FileExistsError:
             pass
 
         try:
-            with pathlib.Path(self.ecc_private_key).open(mode="xb") as file:
+            with pathlib.Path(self.ecc_private_key).open(mode="x") as file:
                 file.write(private)
         except FileExistsError:
             pass
-
 
 
 class Input(pydantic.BaseModel):
@@ -79,10 +77,10 @@ class Input(pydantic.BaseModel):
 
 class JWKS(pydantic.BaseModel):
     # Set this to the URL you are hosting your custom JWKS file
-    jwks_location: Optional[Url] = None
-    jwks_dynamic: Optional[Url] = None
+    jwks_location: Url = ""
+    jwks_dynamic: Url = ""
     # Set this to a Burp Collaborator server, or some other place to see host interaction
-    http_listener: Optional[Url] = None
+    http_listener: Url = ""
 
 
 class Config(pydantic.BaseModel):
