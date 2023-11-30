@@ -51,17 +51,17 @@ class Header:
         """Gets a claim from the payload. If claim does not exist, returns None"""
         return self.custom_claims.get(key, None)
 
-    def to_json(self) -> str:
+    def to_json(self) -> bytes:
         """Converts the header to a JSON string."""
         header_dict = {
             "alg": self.alg,
             "typ": self.typ,
             **self.custom_claims  # Include custom claims as key-value pairs
         }
-        return json.dumps(header_dict)
+        return json.dumps(header_dict, separators=(",", ":")).encode("UTF-8")
 
-    def urlsafe_b64encode(self) -> bytes:
-        return base64.urlsafe_b64encode(self.to_json().encode("UTF-8"))
+    def urlsafe_b64encode(self):
+        return base64.urlsafe_b64encode(self.to_json()).decode().strip('=')
 
     @classmethod
     def from_json(cls, json_string: str) -> "Header":
@@ -120,12 +120,12 @@ class Payload:
         """Gets a claim from the payload. If claim does not exist, returns None"""
         return self.data.get(key, None)
 
-    def to_json(self) -> str:
+    def to_json(self) -> bytes:
         """Converts the payload to a JSON string."""
-        return json.dumps(self.data)
+        return json.dumps(self.data, separators=(",", ":")).encode("UTF-8")
 
-    def urlsafe_b64encode(self) -> bytes:
-        return base64.urlsafe_b64encode(self.to_json().encode("UTF-8"))
+    def urlsafe_b64encode(self):
+        return base64.urlsafe_b64encode(self.to_json()).decode().strip('=')
 
     def __str__(self) -> str:
         """String representation of the payload."""
@@ -163,16 +163,17 @@ class Signature:
         self.key = key
         self.algorithm = algorithm
 
-    def sign(self, header: bytes, payload: bytes) -> bytes:
+    def sign(self, header: str, payload: str) -> str:
         """Generates the signature for the given data."""
         # Concatenate encoded header and payload with a period
-        data = header + b'.' + payload
+        data = header + '.' + payload
 
         if self.algorithm.startswith("HS"):
-            signature = hmac.new(self.key.encode("UTF-8"), data, hashlib.sha256).digest()
-            signature = base64.urlsafe_b64encode(signature).rstrip(b'=')
+            digest = (hmac.new(self.key.encode("UTF-8"), data.encode("UTF-8"), "sha256")).digest()
+            signature = base64.urlsafe_b64encode(digest).decode().strip('=')
 
             return signature
+
     @staticmethod
     def generate_hmac_signature(encoded_data: bytes, key: bytes) -> bytes:
         """Generates HMAC signature for HMAC-based algorithms."""
