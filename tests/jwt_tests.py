@@ -12,24 +12,25 @@ class TestJWT:
         When encoding the JWT.
         Then the encoded token should be a non-empty string.
         And When decoding the encoded token.
+        And When decoding the encoded token.
         Then the decoded payload should match the original payload.
         """
-        expected_header = b"eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9"
+        expected_header = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
 
         header = Header("HS256", "JWT")
         given_header = header.urlsafe_b64encode()
 
         assert given_header == expected_header
 
-        expected_payload = b"eyJpc3MiOiAiam9lIiwgImV4cCI6IDEzMDA4MTkzODAsICJodHRwOi8vZXhhbXBsZS5jb20vaXNfcm9vdCI6IHRydWV9"
+        expected_payload = "eyJpc3MiOiJqb2UiLCJleHAiOjEzMDA4MTkzODAsImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ"
         payload = Payload({"iss": "joe", "exp": 1300819380, "http://example.com/is_root": True})
 
         given_payload = payload.urlsafe_b64encode()
 
         assert given_payload == expected_payload
 
-        expected_signature = b"bPq2_UTJCTJy5jikbBQWU4AgIZaFG9lIgtBhXFuFQ3I"
-        signature = Signature("dWGgphQgrorLKwpJFteFZUDHG4m8b6HDkKnrZT8BbZH3m6X66VbWJVezzzBhHRQMn83wnWoBP7trq8mAKkEnK6Bumk47zDfxbteb", "HS256")
+        expected_signature = "Lk7xNLJ8ReSNz0O-cufFhk6CTJBVkR-0fY57B8LR62U"
+        signature = Signature("password", "HS256")
         given_signature = signature.sign(header.urlsafe_b64encode(), payload.urlsafe_b64encode())
 
         assert given_signature == expected_signature
