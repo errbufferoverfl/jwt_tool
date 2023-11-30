@@ -1,6 +1,16 @@
+import base64
+import hashlib
+import hmac
 import json
-from typing import Union, Dict
+import logging
+from typing import Union, Dict, Optional
 
+import Cryptodome.Hash.SHA3_256
+from Cryptodome.Hash import SHA256
+from Cryptodome.PublicKey import RSA
+from Cryptodome.Signature import pkcs1_15
+
+from jwt_tool.JWK import JWK
 from jwt_tool.JWKS import JWKS
 
 
@@ -10,12 +20,14 @@ class Header:
 
     Attributes:
         alg (str): The algorithm used for signing the token.
-        typ (str): The type of the token (e.g., "JWT").
+        typ (str): The type of the token, e.g., "JWT".
+        kid (str): The key was used to sign the JWT, e.g.,
         custom_claims (Dict[str, Union[str, int, float]]): Custom claims added to the header.
 
     Methods:
         to_json: Converts the header to a JSON string.
         add_claim: Adds a custom claim to the header.
+        encode: Encodes the header for use in a JWT.
 
     Example:
         header = JWTHeader(alg="HS256", typ="JWT")
@@ -23,29 +35,47 @@ class Header:
         header_json = header.to_json()
     """
     algorithm: str
-    type: str
+    typ: str
     claims: str
 
-    def __init__(self, alg: str, typ: str):
+    def __init__(self, alg: str, typ: str = "JWT", custom_claims: Dict[str, Union[str, int, float]] = None):
         self.alg = alg
         self.typ = typ
-        self.custom_claims = {}
+        self.custom_claims = custom_claims or {}
 
-    def inject_new_claim(self, key: str, value: Union[str, int, float]):
-        """Adds a custom claim to the header."""
+    def add_claim(self, key: str, value: Union[str, int, float]):
+        """Adds a custom claim to the header. If the claim already exists, it will be overridden."""
         self.custom_claims[key] = value
+
+    def get_custom_claim(self, key):
+        """Gets a claim from the payload. If claim does not exist, returns None"""
+        return self.custom_claims.get(key, None)
 
     def to_json(self) -> str:
         """Converts the header to a JSON string."""
-        return json.dumps({"alg": self.alg, "typ": self.typ})
+        header_dict = {
+            "alg": self.alg,
+            "typ": self.typ,
+            **self.custom_claims  # Include custom claims as key-value pairs
+        }
+        return json.dumps(header_dict)
+
+    def urlsafe_b64encode(self) -> bytes:
+        return base64.urlsafe_b64encode(self.to_json().encode("UTF-8"))
+
+    @classmethod
+    def from_json(cls, json_string: str) -> "Header":
+        """Creates a JWTHeader object from a JSON string."""
+        header_dict = json.loads(json_string)
+        return cls(alg=header_dict["alg"], typ=header_dict["typ"], **header_dict)
 
     def __str__(self) -> str:
         """String representation of the header."""
-        return f"JWTHeader(alg={self.alg}, typ={self.typ}, custom_claims={self.custom_claims})"
+        return f"Header(alg={self.alg}, typ={self.typ}, custom_claims={self.custom_claims})"
 
     def __repr__(self) -> str:
         """Official string representation of the header."""
-        return f"JWTHeader(alg={self.alg}, typ={self.typ}, custom_claims={self.custom_claims})"
+        return f"Header(alg={self.alg}, typ={self.typ}, custom_claims={self.custom_claims})"
 
     def __eq__(self, other: "Header") -> bool:
         """Equality comparison between two headers."""
@@ -82,25 +112,32 @@ class Payload:
     def __init__(self, data: Dict[str, Union[str, int, float]]):
         self.data = data
 
-    def inject_new_claim(self, key: str, value: Union[str, int, float]):
-        """Adds a custom claim to the payload."""
+    def add_claim(self, key: str, value: Union[str, int, float]):
+        """Adds a custom claim to the payload. If the claim already exists, it will be overridden."""
         self.data[key] = value
 
-    def __str__(self) -> str:
-        """String representation of the payload."""
-        return f"JWTPayload(data={self.data})"
-
-    def __repr__(self) -> str:
-        """Official string representation of the payload."""
-        return f"JWTPayload(data={self.data})"
-
-    def __eq__(self, other: "Payload") -> bool:
-        """Equality comparison between two payloads."""
-        return self.data == other.data
+    def get_claim(self, key):
+        """Gets a claim from the payload. If claim does not exist, returns None"""
+        return self.data.get(key, None)
 
     def to_json(self) -> str:
         """Converts the payload to a JSON string."""
         return json.dumps(self.data)
+
+    def urlsafe_b64encode(self) -> bytes:
+        return base64.urlsafe_b64encode(self.to_json().encode("UTF-8"))
+
+    def __str__(self) -> str:
+        """String representation of the payload."""
+        return f"Payload(data={self.data})"
+
+    def __repr__(self) -> str:
+        """Official string representation of the payload."""
+        return f"Payload(data={self.data})"
+
+    def __eq__(self, other: "Payload") -> bool:
+        """Equality comparison between two payloads."""
+        return self.data == other.data
 
 
 class Signature:
@@ -109,30 +146,50 @@ class Signature:
 
     Attributes:
         key (bytes): The key used for signing.
-        algorithm (str): The signing algorithm (e.g., "HS256").
 
     Methods:
         sign: Generates the signature for the given data.
+        generate_hmac_signature: Generates HMAC signature for HMAC-based algorithms.
+        generate_rsa_signature: Generates RSA signature for RSA-based algorithms.
 
     Example:
         signature = JWSSignature(key=b"secret_key", algorithm="HS256")
         token_signature = signature.sign(header_and_payload)
     """
-    def __init__(self, key: bytes, algorithm: str):
+    key: str
+    algorithm: str
+
+    def __init__(self, key: str, algorithm: str):
         self.key = key
         self.algorithm = algorithm
 
-    def check_signature(self):
-        pass
+    def sign(self, header: bytes, payload: bytes) -> bytes:
+        """Generates the signature for the given data."""
+        # Concatenate encoded header and payload with a period
+        data = header + b'.' + payload
 
-    def check_signature_kid(self):
-        pass
+        if self.algorithm.startswith("HS"):
+            signature = hmac.new(self.key.encode("UTF-8"), data, hashlib.sha256).digest()
+            signature = base64.urlsafe_b64encode(signature).rstrip(b'=')
 
-    def crack_signature(self):
-        pass
+            return signature
+    @staticmethod
+    def generate_hmac_signature(encoded_data: bytes, key: bytes) -> bytes:
+        """Generates HMAC signature for HMAC-based algorithms."""
+        return hmac.new(key, encoded_data, hashlib.sha256).digest()
 
-    def __str__(self):
-        pass
+    @staticmethod
+    def generate_rsa_signature(encoded_data: bytes, private_key: Union[bytes, RSA.RsaKey]) -> bytes:
+        """Generates RSA signature for RSA-based algorithms."""
+        if isinstance(private_key, bytes):
+            private_key = RSA.import_key(private_key)
+        h = SHA256.new(encoded_data)
+        signature = pkcs1_15.new(private_key).sign(h)
+        return signature
+
+    def __str__(self) -> str:
+        """String representation of the Signature."""
+        return f"Signature(key={self.key}, algorithm={self.algorithm})"
 
 
 class JWT:
@@ -140,9 +197,9 @@ class JWT:
     JSON Web Token (JWT) representation.
 
     Attributes:
-        header (JWTHeader): The token header.
-        payload (JWTPayload): The token payload.
-        signature (JWSSignature): The token signature.
+        header (Header): The token header.
+        payload (Payload): The token payload.
+        signature (Signature): The token signature.
 
     Methods:
         encode: Generates the complete JWT by encoding header, payload, and signature.
@@ -167,38 +224,61 @@ class JWT:
 
     jwks: JWKS
 
-    def __init__(self, header: Header, payload: Payload, signature: Signature, jwks: JWKS):
+    def __init__(self, header: Header, payload: Payload, signature: Signature, jwks: Optional["JWKS"] = None):
         self.header = header
         self.payload = payload
         self.signature = signature
         self.jwks = jwks
 
-    def encode(self) -> str:
-        """Generates the encoded JWT token."""
-        # Implementation of encoding logic
+    def verify(self, encoded_token: str, secret_key: str) -> bool:
+        """
+        Verifies the JWT token, as per RFC 7519#7.2
+        If any of the listed steps fail, then the JWT is rejected.
 
-    def verify(self, encoded_token: str) -> bool:
-        """Verifies the JWT token."""
-        # Implementation of verification logic
-        key = self.get_key_from_jwks()
-        # Rest of the verification logic
+        Args:
+            secret_key:
+            encoded_token:
+
+        Returns:
+
+        """
+        if not encoded_token:
+            return False
+
+        # Verify that the JWT contains at least one period ('.') character.
+        parts = encoded_token.split('.')
+
+        # Ensure there are at least two parts (header and payload)
+        if len(parts) < 2:
+            logging.warning("Invalid JWT format. At least two parts (header and payload) are required.")
+            return False
+
+        header, payload = parts[:2]
+
+        if len(parts) == 3:
+            signature = parts[2]
+            # Verify the signature using HMAC-SHA256
+            computed_signature = hmac.new(secret_key.encode('utf-8'), f'{header}.{payload}'.encode('utf-8'), Cryptodome.Hash.SHA3_256.SHA3_256_Hash)
+            expected_signature = self._base64url_decode(signature)
+
+            if computed_signature.digest() == expected_signature:
+                return True
+            else:
+                return False
+        else:
+            return True
 
     def get_key_from_jwks(self) -> Union[JWK, None]:
         """Retrieves the key from the JWKS based on the Key ID (kid)."""
         return self.jwks.get_key_by_kid(self.signature.kid)
 
-    def check_public_key_exploit(self):
-        pass
-
-    def tamper_with_token(self):
-        pass
-
-    def update_header_claim(self, claim_key: str, claim_value: str):
-        """Updates a claim in the JWT header."""
-        setattr(self.header, claim_key, claim_value)
-
-    def test_key(self):
-        pass
+    @staticmethod
+    def _base64url_decode(encoded_string: str):
+        # Add padding if necessary and then decode base64url
+        padding = len(encoded_string) % 4
+        if padding:
+            encoded_string += '=' * (4 - padding)
+        return base64.urlsafe_b64decode(encoded_string.encode('utf-8'))
 
     def __str__(self) -> str:
         """String representation of the JWT."""

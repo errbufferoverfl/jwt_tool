@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 from jwt_tool.JWK import JWK
 
