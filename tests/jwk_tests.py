@@ -1,6 +1,7 @@
 import pytest
 
-from jwt_tool.jot import JWK, SymmetricKeyAlgorithm, JWKS
+from jwt_tool import SymmetricKeyAlgorithm
+from jwt_tool.JWK import JWK
 
 
 @pytest.mark.usefixtures('rsa_public_key')

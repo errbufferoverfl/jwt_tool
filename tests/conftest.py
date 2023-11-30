@@ -2,6 +2,8 @@ from pathlib import Path
 
 import pytest
 
+from jwt_tool.JWT import Header
+
 
 @pytest.fixture
 def rsa_public_key() -> str:

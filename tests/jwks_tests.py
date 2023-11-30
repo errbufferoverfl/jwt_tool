@@ -1,6 +1,7 @@
 import pytest
 
-from jwt_tool.jot import JWKS, JWK
+from jwt_tool.JWK import JWK
+from jwt_tool.JWT import JWKS
 
 
 @pytest.mark.usefixtures('rsa_public_key')
