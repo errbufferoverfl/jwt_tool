@@ -1,4 +1,5 @@
 import copy
+
 import pytest
 
 from jwt_tool.JWT import Payload, Header, JWT, SigningConfig
@@ -115,3 +116,28 @@ class TestJWT:
         Then the encoded token should be updated with a new signature.
         """
         pass
+
+    @pytest.mark.usefixtures('valid_jwt_string')
+    @pytest.mark.usefixtures('valid_jwt_no_sig_string')
+    @pytest.mark.usefixtures('invalid_jwt_no_header')
+    @pytest.mark.usefixtures('invalid_jwt_no_payload')
+    def test_create_jwt_from_string(self, valid_jwt_string, valid_jwt_no_sig_string, invalid_jwt_no_header, invalid_jwt_no_payload):
+        """
+        Scenario: Parsing a valid JWT string
+
+        Given a valid JWT string
+        When parsing the JWT string
+        Then the resulting JWT object should have the correct header, payload, and signature
+        """
+        jwt_object = JWT.from_jwt_string(valid_jwt_string)
+
+        assert isinstance(jwt_object, JWT)
+        assert isinstance(jwt_object.header, Header)
+        assert isinstance(jwt_object.payload, Payload)
+        assert jwt_object._signature is not None
+
+        jwt_object = JWT.from_jwt_string(valid_jwt_no_sig_string)
+        assert isinstance(jwt_object, JWT)
+        assert isinstance(jwt_object.header, Header)
+        assert isinstance(jwt_object.payload, Payload)
+        assert jwt_object._signature is None
