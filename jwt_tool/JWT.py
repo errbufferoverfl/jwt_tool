@@ -1,16 +1,10 @@
 import base64
-import hashlib
 import hmac
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Union, Dict, Optional, List
+from typing import Union, Dict, Optional
 
-from Cryptodome.Hash import SHA256
-from Cryptodome.PublicKey import RSA
-from Cryptodome.Signature import pkcs1_15
-
-from jwt_tool.Exceptions import JWTValidationError
 from jwt_tool.JWK import JWK
 from jwt_tool.JWKS import JWKS
 
@@ -273,20 +267,6 @@ class SigningConfig:
         self.key = key
         self.algorithm = algorithm
 
-    @staticmethod
-    def generate_hmac_signature(encoded_data: bytes, key: bytes) -> bytes:
-        """Generates HMAC signature for HMAC-based algorithms."""
-        return hmac.new(key, encoded_data, hashlib.sha256).digest()
-
-    @staticmethod
-    def generate_rsa_signature(encoded_data: bytes, private_key: Union[bytes, RSA.RsaKey]) -> bytes:
-        """Generates RSA signature for RSA-based algorithms."""
-        if isinstance(private_key, bytes):
-            private_key = RSA.import_key(private_key)
-        h = SHA256.new(encoded_data)
-        signature = pkcs1_15.new(private_key).sign(h)
-        return signature
-
     def __str__(self) -> str:
         """String representation of the Signature."""
         return f"Signature(key={self.key}, algorithm={self.algorithm})"
@@ -302,8 +282,9 @@ class JWT:
         signing_config (SigningConfig): The token signature.
 
     Methods:
-        verify: Verifies the integrity of a JWT.
         sign: Generates the signature for the given data.
+        verify: Verifies the integrity of a JWT.
+        from_jwt_string: Creates a JWT object from a JWT string.
         encode: Generates the complete JWT by encoding header, payload, and signature.
 
     Dunder Methods:
@@ -361,6 +342,39 @@ class JWT:
             jwt_str += f"{self._signature}"
 
         return jwt_str
+
+    @classmethod
+    def from_jwt_string(cls, jwt_string: str) -> "JWT":
+        """
+        Creates a JWT object from a JWT string.
+
+        Args:
+            jwt_string (str): The JWT string to parse.
+
+        Returns:
+            JWT: The created JWT object.
+        """
+        # Split the JWT string into header, payload, and signature
+        parts = jwt_string.split(".")
+
+        if len(parts) < 2:
+            raise ValueError("Invalid JWT string format")
+
+        # Decode and parse the header and payload
+        header_json = base64.urlsafe_b64decode(parts[0] + "==").decode("utf-8")
+        payload_json = base64.urlsafe_b64decode(parts[1] + "==").decode("utf-8")
+
+        header = Header.from_json(header_json)
+        payload = Payload.from_json(payload_json)
+
+        # Create a new JWT object
+        jwt = cls(header, payload)
+
+        # Set the signature if present
+        if len(parts) != 2:
+            jwt._signature = parts[2]
+
+        return jwt
 
     def get_key_from_jwks(self) -> Union[JWK, None]:
         """Retrieves the key from the JWKS based on the Key ID (kid)."""
