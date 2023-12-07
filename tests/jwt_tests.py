@@ -134,6 +134,16 @@ class TestJWT:
         assert isinstance(jwt_object, JWT)
         assert isinstance(jwt_object.header, Header)
         assert isinstance(jwt_object.payload, Payload)
+
+        # assert that all the header options are present
+        assert (jwt_object.header.alg == "HS256")
+        assert (jwt_object.header.typ == "JWT")
+
+        # assert that all the payload properties are present
+        assert (jwt_object.payload.get_claim("iss") == "joe")
+        assert (jwt_object.payload.get_claim("exp") == 1300819380)
+        assert (jwt_object.payload.get_claim("http://example.com/is_root") is True)
+
         assert jwt_object._signature is not None
 
         jwt_object = JWT.from_jwt_string(valid_jwt_no_sig_string)
@@ -141,3 +151,9 @@ class TestJWT:
         assert isinstance(jwt_object.header, Header)
         assert isinstance(jwt_object.payload, Payload)
         assert jwt_object._signature is None
+
+        jwt_object = JWT.from_jwt_string(invalid_jwt_no_header)
+        assert jwt_object is None
+
+        jwt_object = JWT.from_jwt_string(invalid_jwt_no_payload)
+        assert jwt_object is None

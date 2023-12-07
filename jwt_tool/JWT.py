@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Union, Dict, Optional
 
+from jwt_tool.Exceptions import JWTDecodingError
 from jwt_tool.JWK import JWK
 from jwt_tool.JWKS import JWKS
 
@@ -344,7 +345,7 @@ class JWT:
         return jwt_str
 
     @classmethod
-    def from_jwt_string(cls, jwt_string: str) -> "JWT":
+    def from_jwt_string(cls, jwt_string: str) -> Union["JWT", None]:
         """
         Creates a JWT object from a JWT string.
 
@@ -364,8 +365,19 @@ class JWT:
         header_json = base64.urlsafe_b64decode(parts[0] + "==").decode("utf-8")
         payload_json = base64.urlsafe_b64decode(parts[1] + "==").decode("utf-8")
 
-        header = Header.from_json(header_json)
-        payload = Payload.from_json(payload_json)
+        try:
+            header = Header.from_json(header_json)
+        except json.decoder.JSONDecodeError as error:
+            logging.critical(f"Unable to decode JWT header: '{jwt_string}'.\nExpecting: JSON value. Got: {header_json}")
+            logging.debug(f"The following error was returned by `json.decoder.JSONDecodeError`:\n{error.msg}")
+            return None
+
+        try:
+            payload = Payload.from_json(payload_json)
+        except json.decoder.JSONDecodeError as error:
+            logging.critical(f"Unable to decode JWT payload: '{jwt_string}'.\nExpecting: JSON value. Got: {header_json}")
+            logging.debug(f"The following error was returned by `json.decoder.JSONDecodeError`:\n{error.msg}")
+            return None
 
         # Create a new JWT object
         jwt = cls(header, payload)
