@@ -359,7 +359,8 @@ class JWT:
         parts = jwt_string.split(".")
 
         if len(parts) < 2:
-            raise ValueError("Invalid JWT string format")
+            logging.critical(f"Unable to decode JWT: '{jwt_string}'.\nInsufficient parts, expected at least 2. Got {len(parts)}.")
+            return None
 
         # Decode and parse the header and payload
         header_json = base64.urlsafe_b64decode(parts[0] + "==").decode("utf-8")

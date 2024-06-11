@@ -66,4 +66,3 @@ class JWKS:
         for key in self.keys:
             jwks_str += str(key) + "\n"
         return jwks_str
-
