@@ -34,6 +34,7 @@ A small dopamine rabbit hole.
 <div align="center">  
 <sub>The little experiment that could.<br>Built with ❤︎ by  
 <a href="https://genericsocialmediapage.com/@errbufferoverfl">errbufferoverfl</a>.
+</sub>
 </div>  
 
 ## Introduction
