@@ -18,3 +18,9 @@ filename = "jwt_tool.py"
 serialize = ["{major}.{minor}.{patch}"]
 search = '# JWT_Tool version {current_version} (09_09_2022)'
 replace = '# JWT_Tool version {new_version} (09_09_2022)'
+
+[[tool.bumpversion.files]]
+filename = "config.py"
+serialize = ["{major}.{minor}.{patch}"]
+search = 'version: str = "{current_version}"'
+replace = 'version: str = "{new_version}"'
