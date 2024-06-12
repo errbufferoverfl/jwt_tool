@@ -105,7 +105,7 @@ class TestJWT:
 
         valid_jwt_object.payload.add_claim("iat", 1516239022)
 
-        assert valid_jwt_object._signature == original_jwt_object._signature, f"Signature should not change when updating payload. Expected: {original_jwt_object._signature}, but got: {valid_jwt_object._signature}"
+        assert valid_jwt_object._provided_signature == original_jwt_object._provided_signature, f"Signature should not change when updating payload. Expected: {original_jwt_object._provided_signature}, but got: {valid_jwt_object._provided_signature}"
 
     def test_update_payload_and_change_signature(self):
         """
@@ -144,13 +144,13 @@ class TestJWT:
         assert (jwt_object.payload.get_claim("exp") == 1300819380)
         assert (jwt_object.payload.get_claim("http://example.com/is_root") is True)
 
-        assert jwt_object._signature is not None
+        assert jwt_object._provided_signature is not None
 
         jwt_object = JWT.from_jwt_string(valid_jwt_no_sig_string)
         assert isinstance(jwt_object, JWT)
         assert isinstance(jwt_object.header, Header)
         assert isinstance(jwt_object.payload, Payload)
-        assert jwt_object._signature is None
+        assert jwt_object._provided_signature is None
 
         jwt_object = JWT.from_jwt_string(invalid_jwt_no_header)
         assert jwt_object is None
