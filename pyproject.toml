@@ -11,18 +11,16 @@ packages = [{ include = "jwt_tool" }]
 python = "^3.11"
 termcolor = "^2.3.0"
 cprint = "^1.2.2"
-pycryptodomex = "^3.19.0"
-colorama = "^0.4.6"
 p = "^1.4.0"
 toml = "^0.10.2"
 pydantic = "^2.5.0"
-httpx = "^0.25.2"
+httpx = {extras = ["http2"], version = "^0.27.0"}
 urlstd = "^2023.7.26.1"
+pycryptodomex = "^3.20.0"
 
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.4.3"
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
