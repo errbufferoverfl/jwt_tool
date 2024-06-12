@@ -1,161 +1,117 @@
-# The JSON Web Token Toolkit v2
->*jwt_tool.py* is a toolkit for validating, forging, scanning and tampering JWTs (JSON Web Tokens).  
+<h1 align="center">The JSON Web Token Toolkit [redux]</h1>
 
-![jwt_tool version](https://img.shields.io/badge/version-v2.2.6-blue) ![python version](https://img.shields.io/badge/python-v3.6+-green)
+<div align="center">
+</div>
+<div align="center">
+<strong>A toolkit for validating, forging and tampering with JSON Web Tokens (JWTs).</strong>
+</div>
+<div align="center">
+A small dopamine rabbit hole.
+</div>
 
-![logo](https://user-images.githubusercontent.com/19988419/100555535-18598280-3294-11eb-80ed-ca5a0c3455d6.png)
+<div align="center">
+<h3>
+<a href="https://gitlab.com/errbufferoverfl/jwt_tool/">Repository</a>
+<span> | </span>
+<a href="https://gitlab.com/errbufferoverfl/jwt_tool/-/wikis/introduction">Handbook</a>
+<span> | </span>
+<a href="#contributing">Contributing</a>
+</h3>
+</div>
 
-Its functionality includes:
-* Checking the validity of a token
-* Testing for known exploits:
-  * (CVE-2015-2951) The ***alg=none*** signature-bypass vulnerability
-  * (CVE-2016-10555) The ***RS/HS256*** public key mismatch vulnerability
-  * (CVE-2018-0114) ***Key injection*** vulnerability
-  * (CVE-2019-20933/CVE-2020-28637) ***Blank password*** vulnerability
-  * (CVE-2020-28042) ***Null signature*** vulnerability
-* Scanning for misconfigurations or known weaknesses
-* Fuzzing claim values to provoke unexpected behaviours
-* Testing the validity of a secret/key file/Public Key/JWKS key
-* Identifying ***weak keys*** via a High-speed ***Dictionary Attack***
-* Forging new token header and payload contents and creating a new signature with the **key** or via another attack method
-* Timestamp tampering
-* RSA and ECDSA key generation, and reconstruction (from JWKS files)
-* ...and lots more!
+<div align="center">
+<sub>The little experiment that could.<br>Built with ❤︎ by
+<a href="https://genericsocialmediapage.com/@errbufferoverfl">errbufferoverfl</a>.
+</sub>
+</div>
 
----
+## Introduction
 
-## Audience
-This tool is written for **pentesters**, who need to check the strength of the tokens in use, and their susceptibility to known attacks. A range of tampering, signing and verifying options are available to help delve deeper into the potential weaknesses present in some JWT libraries.  
-It has also been successful for **CTF challengers** - as CTFs seem keen on JWTs at present.  
-It may also be useful for **developers** who are using JWTs in projects, but would like to test for stability and for known vulnerabilities when using forged tokens.
+The JSON Web Token Toolkit [redux] is a suite designed to test the security and robustness of JSON Web Tokens (JWTs). This tool provides a range of functionalities aimed at validating tokens, testing for known exploits, scanning for misconfigurations, and much more.
 
----
+The JWT Toolkit [redux] is made for penetration testers, CTF participants and developers alike, providing extensive tampering, signing, and verifying options to uncover potential weaknesses in web applications using JWTs.
 
-## Requirements
-This tool is written natively in **Python 3** (version 3.6+) using the common libraries, however various cryptographic funtions (and general prettiness/readability) do require the installation of a few common Python libraries.  
-*(An older Python 2.x version of this tool is available on the legacy branch for those who need it, although this is no longer be supported or updated)*
+Some of the key features of the JWT Toolkit [redux] include:
 
----
+* Token Validity Checks: Verify the validity of JWTs to ensure they conform to standards and are properly structured.
+* Exploit Testing: Test for several known vulnerabilities, including:
+  * CVE-2015-2951: The alg=none signature-bypass vulnerability
+  * CVE-2016-10555: The RS/HS256 public key mismatch vulnerability
+  * CVE-2018-0114: Key injection vulnerability
+  * CVE-2019-20933/CVE-2020-28637: Blank password vulnerability
+  * CVE-2020-28042: Null signature vulnerability
+* Misconfiguration Scanning: Identify and report on potential misconfigurations or weaknesses in JWT setups.
+* Claim Fuzzing: Fuzz claim values to provoke unexpected behaviors and identify potential flaws.
+* Secret/Key Validation: Test the validity of secrets, key files, public keys, and JWKS keys.
+* Weak Key Identification: Use high-speed dictionary attacks to identify weak keys.
+* Token Forgery: Forge new token headers and payloads, and create new signatures with keys or via attack methods.
+* Timestamp Tampering: Manipulate timestamps to test the resilience of JWTs against time-based attacks.
+* Key Generation and Reconstruction: Generate and reconstruct RSA and ECDSA keys, including from JWKS files.
 
-## Installation
-Installation is just a case of downloading the `jwt_tool.py` file (or `git clone` the repo).  
-(`chmod` the file too if you want to add it to your *$PATH* and call it from anywhere.)
+## Table of contents
 
-`$ git clone https://github.com/ticarpi/jwt_tool`  
-`$ python3 -m pip install termcolor cprint pycryptodomex requests`  
+- [Introduction](#introduction)
+- [Design Principles](#design-principles)
+- [Installing](#installing)
+- [Getting Started](#getting-started)
+  - [Setup](#setup)
+- [License](#license)
 
-On first run the tool will generate a config file, some utility files, logfile, and a set of Public and Private keys in various formats.  
+## Design Principles
 
-### Custom Configs
-* To make best use of the scanning options it is **strongly advised** to copy the custom-generated JWKS file somewhere that can be accessed remotely via a URL. This address should then be stored in `jwtconf.ini` as the "jwkloc" value.  
-* In order to capture external service interactions - such as DNS lookups and HTTP requests - put your unique address for Burp Collaborator (or other alternative tools such as RequestBin) into the config file as the "httplistener" value.  
-***Review the other options in the config file to customise your experience.***
+* **Modularity and Separation of Concerns**
+  * **Class Responsibilities:** Clear division of responsibilities among various classes (e.g., JWT, Header, Payload, SigningConfig), making each class handle a specific part of JWT handling.
+  * **Reusable Components:** Designing classes and methods to be reusable and focused on single responsibilities.
+* **Clarity, Readability, and Usability**
+  * **Descriptive Names and Documentation:** Use of descriptive method names, comprehensive docstrings, and inline comments to make the codebase easy to understand and maintain.
+  * **User-Friendly CLI:** Integration with Click for a command-line interface that enhances usability, allowing users to interact with the tool easily.
+* **Flexibility and Extensibility**
+  * **Configurable Components:** Introduction of configurable components like SigningConfig to allow flexibility in specifying signing algorithms and keys.
+  * **Constants for Special Values:** Use of constants to represent special states, making the code more extensible and clear in its intentions.
 
-### Colour bug in Windows
-To fix broken colours in Windows cmd/Powershell: uncomment the below two lines in `jwt_tool.py` (remove the "# " from the beginning of each line)  
-You will also need to install colorama: `python3 -m pip install colorama`
+## Installing
+
+The [JWT Tool CLI guide](https://gitlab.com/errbufferoverfl/jwt_tool/-/wikis/jwt-tool-cli), has more information on installation, usage and exit codes.
+
+The easiest way to install JWT Toolkit [redux] is through git:
+
+```shell
+git clone git@gitlab.com:errbufferoverfl/jwt_tool.git
 ```
-# import colorama
-# colorama.init()
+
+## Getting Started
+
+In the [Quickstart guide](https://gitlab.com/errbufferoverfl/jwt_tool/-/wikis/introduction/quickstart), you'll learn how to get started with JWT Tool [redux] from configuring the tool to running your first scan. It covers **configuration**, and **running** the tool.
+
+The setup instructions below provide a high-level overview of the steps needed to setup JWT Toolkit [redux].
+
+### Setup
+
+#### 1. Installation
+
+Install JWT Toolkit [redux] on your computer with the following command:
+
+```shell
+git clone git@gitlab.com:errbufferoverfl/jwt_tool.git
 ```
----
 
-## Usage
-The first argument should be the JWT itself (*unless providing this in a header or cookie value*). Providing no additional arguments will show you the decoded token values for review.  
-`$ python3 jwt_tool.py <JWT>`  
+#### 2. Generate a Configuration File
 
-The toolkit will validate the token and list the header and payload values.  
+_Coming soon._
 
-### Additional arguments
-The many additional arguments will take you straight to the appropriate function and return you a token ready to use in your tests.  
-For example, to tamper the existing token run the following:  
-`$ python3 jwt_tool.py eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.aqNCvShlNT9jBFTPBpHDbt2gBB1MyHiisSDdp8SQvgw -T`  
+#### 3. Run a Scan
 
-Many options need additional values to set options.  
-For example, to run a particular type of exploit you need to choose the eXploit (-X) option and select the vulnerability (here using "a" for the *alg:none* exploit):  
-`$ python3 jwt_tool.py eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.aqNCvShlNT9jBFTPBpHDbt2gBB1MyHiisSDdp8SQvgw -X a`
+_Coming soon._
 
-### Extra parameters
-Some options such as Verifying tokens require additional parameters/files to be provided (here providing the Public Key in PEM format):  
-`$ python3 jwt_tool.py eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.aqNCvShlNT9jBFTPBpHDbt2gBB1MyHiisSDdp8SQvgw -V -pk public.pem`  
 
-### Sending tokens to a web application
-All modes now allow for sending the token directly to an application.  
-You need to specify:  
-* target URL (-t)
-* a request header (-rh) or request cookies (-rc) that are needed by the application (***at least one must contain the token***)
-* (optional) any POST data (where the request is a POST)
-* (optional) any additional jwt_tool options, such as modes or tampering/injection options  
-* (optional) a *canary value* (-cv) - a text value you expect to see in a successful use of the token (e.g. "Welcome, ticarpi")  
-An example request might look like this (using scanning mode for forced-errors):  
-`$ python3 jwt_tool.py -t https://www.ticarpi.com/ -rc "jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.bsSwqj2c2uI9n7-ajmi3ixVGhPUiY7jO9SUn9dm15Po;anothercookie=test" -rh "Origin: null" -cv "Welcome" -M er` 
+## Contributing
 
-Various responses from the request are displayed:  
-* Response code
-* Response size
-* Unique request tracking ID (for use with logging)
-* Mode/options used
+Please submit patches to code or documentation as GitLab pull requests.
 
----
+Contributions must be licensed under the GNU GPLv3. The contributor retains the copyright.
 
-## Common Workflow
+## License
 
-Here is a quick run-through of a basic assessment of a JWT implementation. If no success with these options then dig deeper into other modes and options to hunt for new vulnerabilities (or zero-days!).  
+The JSON Web Token Toolkit [redux] is released under GNU General Public License v3.0 or later.
 
-### Recon:  
-Read the token value to get a feel for the claims/values expected in the application:  
-`$ python3 jwt_tool.py eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.aqNCvShlNT9jBFTPBpHDbt2gBB1MyHiisSDdp8SQvgw`  
-
-### Scanning:
-Run a ***Playbook Scan*** using the provided token directly against the application to hunt for common misconfigurations:  
-`$ python3 jwt_tool.py -t https://www.ticarpi.com/ -rc "jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.bsSwqj2c2uI9n7-ajmi3ixVGhPUiY7jO9SUn9dm15Po;anothercookie=test" -M pb`  
-
-### Exploitation:
-If any successful vulnerabilities are found change any relevant claims to try to exploit it (here using the *Inject JWKS* exploit and injecting a new username):  
-`$ python3 jwt_tool.py -t https://www.ticarpi.com/ -rc "jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.bsSwqj2c2uI9n7-ajmi3ixVGhPUiY7jO9SUn9dm15Po;anothercookie=test" -X i -I -pc name -pv admin` 
-
-### Fuzzing:
-Dig deeper by testing for unexpected values and claims to identify unexpected app behaviours, or run attacks on programming logic or token processing:  
-`$ python3 jwt_tool.py -t https://www.ticarpi.com/ -rc "jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.bsSwqj2c2uI9n7-ajmi3ixVGhPUiY7jO9SUn9dm15Po;anothercookie=test" -I -hc kid -hv custom_sqli_vectors.txt`  
-
-### Review:
-Review any successful exploitation by querying the logs to read more data about the request and :  
-`$ python3 jwt_tool.py -t https://www.ticarpi.com/ -rc "jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJsb2dpbiI6InRpY2FycGkifQ.bsSwqj2c2uI9n7-ajmi3ixVGhPUiY7jO9SUn9dm15Po;anothercookie=test" -X i -I -pc name -pv admin`   
-
----
-
-### Help
-For a list of options call the usage function:
-Some options such as Verifying tokens require additional parameters/files to be provided:  
-`$ python3 jwt_tool.py -h`
-
-**A more detailed user guide can be found on the [wiki page](https://github.com/ticarpi/jwt_tool/wiki/Using-jwt_tool).**
-
----
-
-## JWT Attack Playbook - new wiki content!  
-![playbook_logo](https://user-images.githubusercontent.com/57728093/68797806-21f25700-064d-11ea-9baa-c58fb6f75c0b.png)
-
-Head over to the [JWT Attack Playbook](https://github.com/ticarpi/jwt_tool/wiki) for a detailed run-though of what JWTs are, what they do, and a full workflow of how to thoroughly test them for vulnerabilities, common weaknesses and unintended coding errors.
-
----
-
-## Tips
-**Regex for finding JWTs in Burp Search**  
-*(make sure 'Case sensitive' and 'Regex' options are ticked)*  
-`[= ]eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9._-]*` - url-safe JWT version  
-`[= ]eyJ[A-Za-z0-9_\/+-]*\.[A-Za-z0-9._\/+-]*` - all JWT versions (higher possibility of false positives)
-
----
-
-## Further Reading
-* [JWT Attack Playbook (https://github.com/ticarpi/jwt_tool/wiki)](https://github.com/ticarpi/jwt_tool/wiki) - for a thorough JWT testing methodology
-
-* [A great intro to JWTs - https://jwt.io/introduction/](https://jwt.io/introduction/)
-
-* A lot of the initial inspiration for this tool comes from the vulnerabilities discovered by Tim McLean.  
-[Check out his blog on JWT weaknesses here: https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/](https://auth0.com/blog/critical-vulnerabilities-in-json-web-token-libraries/)  
-
-* A whole bunch of exercises for testing JWT vulnerabilities are provided by [Pentesterlab (https://www.pentesterlab.com)](https://www.pentesterlab.com). I'd highly recommend a PRO subscription if you are interested in Web App Pentesting.  
-
-  *PLEASE NOTE:* This toolkit will solve most of the Pentesterlab JWT exercises in a few seconds when used correctly, however I'd **strongly** encourage you to work through these exercises yourself, working out the structure and the weaknesses. After all, it's all about learning...
+See [LICENSE](LICENSE) for the full text.
