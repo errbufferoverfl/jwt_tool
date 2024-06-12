@@ -40,10 +40,12 @@ class Header:
         self.typ = typ
         self.custom_claims = custom_claims or {}
         self._provided_header = None  # Private attribute
+        logging.debug(f"Initialized Header with alg={alg}, typ={typ}, custom_claims={self.custom_claims}")
 
     def add_claim(self, key: str, value: Union[str, int, float]):
         """Adds a custom claim to the header. If the claim already exists, it will be overridden."""
         self.custom_claims[key] = value
+        logging.debug(f"Added custom claim to Header: {key}={value}")
 
     def get_custom_claim(self, key):
         """Gets a claim from the payload. If claim does not exist, returns None"""
@@ -62,6 +64,7 @@ class Header:
     def from_json(cls, json_string: str) -> "Header":
         """Creates a Header object from a JSON string."""
         header_dict = json.loads(json_string)
+        logging.debug(f"Decoded Header from JSON: {header_dict}")
         return cls(**header_dict)
 
     def encode(self) -> str:
@@ -78,16 +81,14 @@ class Header:
         Returns:
             Dict[str, list[str]]: A dictionary containing missing or added claims.
         """
-        # Get the keys of custom claims in both instances
         self_claims = set(self.custom_claims.keys())
         other_claims = set(other.custom_claims.keys())
 
-        # Find missing and added claims
         missing_claims = self_claims - other_claims
         added_claims = other_claims - self_claims
 
-        # Create a dictionary with missing and added claims
         diff_result = {"missing_claims": list(missing_claims), "added_claims": list(added_claims)}
+        logging.debug(f"Difference in custom claims: {diff_result}")
 
         return diff_result
 
@@ -98,6 +99,7 @@ class Header:
     def set_provided_header(self, value):
         """Sets the value of the private provided_header attribute."""
         self._provided_header = value
+        logging.debug(f"Set provided header: {value}")
 
     provided_header = property(get_provided_header, set_provided_header)
 
@@ -146,13 +148,16 @@ class Payload:
         payload.add_claim("custom_key", "custom_value")
         payload_json = payload.to_json()
     """
+
     def __init__(self, data: Dict[str, Union[str, int, float]]):
         self.data = data
         self._provided_payload = None  # Private attribute
+        logging.debug(f"Initialized Payload with data={data}")
 
     def add_claim(self, key: str, value: Union[str, int, float]):
         """Adds a custom claim to the payload. If the claim already exists, it will be overridden."""
         self.data[key] = value
+        logging.debug(f"Added custom claim to Payload: {key}={value}")
 
     def get_claim(self, key):
         """Gets a claim from the payload. If claim does not exist, returns None"""
@@ -166,6 +171,7 @@ class Payload:
     def from_json(cls, json_string: str) -> "Payload":
         """Creates a Payload object from a JSON string."""
         payload_data = json.loads(json_string)
+        logging.debug(f"Decoded Payload from JSON: {payload_data}")
         return cls(payload_data)
 
     def encode(self) -> str:
@@ -189,16 +195,14 @@ class Payload:
             claim_diff = header1.diff_claims(header2)
             print(claim_diff)
         """
-        # Get the keys of custom claims in both instances
         self_claims = set(self.data.keys())
         other_claims = set(other.data.keys())
 
-        # Find missing and added claims
         missing_claims = self_claims - other_claims
         added_claims = other_claims - self_claims
 
-        # Create a dictionary with missing and added claims
         diff_result = {"missing_claims": list(missing_claims), "added_claims": list(added_claims)}
+        logging.debug(f"Difference in custom claims: {diff_result}")
 
         return diff_result
 
@@ -239,7 +243,7 @@ class Payload:
             elif current_time < nbf_time:
                 problems["nbf"] = ["JWT not valid yet."]
 
-        # Return identified problems with claims
+        logging.debug(f"Validation results for claims: {problems}")
         return problems
 
     def get_provided_payload(self):
@@ -249,6 +253,7 @@ class Payload:
     def set_provided_payload(self, value):
         """Sets the value of the private provided_payload attribute."""
         self._provided_payload = value
+        logging.debug(f"Set provided payload: {value}")
 
     provided_payload = property(get_provided_payload, set_provided_payload)
 
@@ -281,9 +286,11 @@ class SigningConfig:
         jwt = (payload, header, signingConfig)
         signature = jwt.sign()
     """
+
     def __init__(self, key: Union[str, None], algorithm: str):
         self.key = key
         self.algorithm = algorithm
+        logging.debug(f"Initialized SigningConfig with key={key}, algorithm={algorithm}")
 
     def to_json(self) -> bytes:
         """Converts the header to a JSON byte string."""
@@ -291,7 +298,6 @@ class SigningConfig:
             "key": self.key,
             "alg": self.algorithm,
         }
-
         return json.dumps(signing_dict, separators=(",", ":")).encode("utf8")
 
     def __str__(self) -> str:
@@ -320,12 +326,11 @@ class JWT:
         __eq__: Equality comparison between two JWTs.
 
     Example:
-        jwt = JWT(header=JWTHeader(alg="HS256", typ="JWT"),
-                  payload=JWTPayload(data={"user_id": 123, "username": "john_doe"}),
-                  signature=JWSSignature(key=b"secret_key", algorithm="HS256"))
+        jwt = JWT(header=Header(alg="HS256", typ="JWT"),
+                  payload=Payload(data={"user_id": 123, "username": "john_doe"}),
+                  signing_config=SigningConfig(key="secret_key", algorithm="HS256"))
         encoded_token = jwt.encode()
         is_valid = jwt.verify(encoded_token)
-        jwt.update_header_claim("sub", "U12345")
     """
 
     def __init__(self, header: Header, payload: Payload, signing_config: Optional[SigningConfig] = None, jwks: Optional[JWKS] = None):
@@ -333,17 +338,17 @@ class JWT:
         self.payload = payload
         self.signing_config = signing_config
         self.jwks = jwks
-
         self._provided_signature = None
+        logging.debug(f"Initialized JWT with header={header}, payload={payload}, signing_config={signing_config}")
 
     def sign(self) -> str:
         """Generates the signature for the given header and payload."""
-        # Concatenate encoded header and payload with a period
         data = f"{self.header.encode()}.{self.payload.encode()}"
 
         if self.signing_config.algorithm.startswith("HS"):
             digest = (hmac.new(self.signing_config.key.encode("utf8"), data.encode("utf8"), "sha256")).digest()
             self._provided_signature = base64.urlsafe_b64encode(digest).decode().strip('=')
+            logging.debug(f"Generated HMAC signature: {self._provided_signature}")
             return self._provided_signature
 
     def encode(self):
@@ -362,7 +367,10 @@ class JWT:
 
         if self.signing_config:
             jwt_str += f"{self._provided_signature}"
+        else:
+            logging.warning("JWT signature not configured.")
 
+        logging.debug(f"Encoded JWT: {jwt_str}")
         return jwt_str
 
     @classmethod
@@ -376,19 +384,18 @@ class JWT:
         Returns:
             JWT: The created JWT object.
         """
-        # Split the JWT string into header, payload, and signature
         parts = jwt_string.split(".")
 
         if len(parts) < 2:
             logging.critical(f"Unable to decode JWT: '{jwt_string}'.\nInsufficient parts, expected at least 2. Got {len(parts)}.")
             return None
 
-        # Decode and parse the header and payload
         header_json = base64.urlsafe_b64decode(parts[0] + "==").decode("utf8")
         payload_json = base64.urlsafe_b64decode(parts[1] + "==").decode("utf8")
 
         try:
             header = Header.from_json(header_json)
+            logging.debug(f"Decoded JWT header: {header_json}")
         except json.decoder.JSONDecodeError as error:
             logging.critical(f"Unable to decode JWT header: '{jwt_string}'.\nExpecting: JSON value. Got: {header_json}")
             logging.debug(f"The following error was returned by `json.decoder.JSONDecodeError`:\n{error.msg}")
@@ -398,6 +405,7 @@ class JWT:
 
         try:
             payload = Payload.from_json(payload_json)
+            logging.debug(f"Decoded JWT payload: {payload_json}")
         except json.decoder.JSONDecodeError as error:
             logging.critical(f"Unable to decode JWT payload: '{jwt_string}'.\nExpecting: JSON value. Got: {header_json}")
             logging.debug(f"The following error was returned by `json.decoder.JSONDecodeError`:\n{error.msg}")
@@ -405,22 +413,23 @@ class JWT:
         else:
             payload.set_provided_payload(parts[1])
 
-        # Create a new JWT object
         jwt = cls(header, payload)
 
-        # Set the signature if present
         if len(parts) == 3:
             jwt.set_provided_signature(parts[2])
+            logging.debug(f"Set provided JWT signature: {parts[2]}")
 
-            # Create SigningConfig object if "alg" is present in the header
             if header.alg:
                 jwt.signing_config = SigningConfig(key=None, algorithm=header.alg)
+                logging.debug(f"Initialized SigningConfig for JWT with alg={header.alg}")
 
         return jwt
 
     def get_key_from_jwks(self) -> Union[JWK, None]:
         """Retrieves the key from the JWKS based on the Key ID (kid)."""
-        return self.jwks.get_key_by_kid(self.signing_config.kid)
+        key = self.jwks.get_key_by_kid(self.signing_config.kid)
+        logging.debug(f"Retrieved key from JWKS for kid={self.signing_config.kid}: {key}")
+        return key
 
     def get_provided_signature(self):
         """Returns the value of the private provided_signature attribute."""
@@ -429,16 +438,17 @@ class JWT:
     def set_provided_signature(self, value):
         """Sets the value of the private provided_signature attribute."""
         self._provided_signature = value
+        logging.debug(f"Set provided signature: {value}")
 
     provided_signature = property(get_provided_signature, set_provided_signature)
 
     def __str__(self) -> str:
         """String representation of the JWT."""
-        return f"JWT(header={self.header}, payload={self.payload}, signature={self.get_provided_signature}, signingConfig={self.signing_config})"
+        return f"JWT(header={self.header}, payload={self.payload}, signature={self.get_provided_signature()}, signingConfig={self.signing_config})"
 
     def __repr__(self) -> str:
         """Official string representation of the JWT."""
-        return f"JWT(header={repr(self.header)}, payload={repr(self.payload)}, signature={repr(self.get_provided_signature)}, signingConfig={self.signing_config})"
+        return f"JWT(header={repr(self.header)}, payload={repr(self.payload)}, signature={repr(self.get_provided_signature())}, signingConfig={self.signing_config})"
 
     def __eq__(self, other: "JWT") -> bool:
         """Equality comparison between two JWTs."""
